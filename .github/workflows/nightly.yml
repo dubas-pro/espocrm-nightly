@@ -51,15 +51,18 @@ jobs:
         run: grunt
 
       - name: Create a ZIP archive
-        run: cd build/EspoCRM-* && zip --quiet --recurse-paths ../../EspoCRM-nightly-${{ env.today }}.zip *
+        run: cd build/EspoCRM-* && zip --quiet --recurse-paths ../../EspoCRM-full.zip *
 
       - name: Create an Upgrade Package
         run: node diff ${{ env.version }}
 
+      - name: Rename an Upgrade Package
+        run: mv build/EspoCRM-upgrade-*.zip EspoCRM-upgrade.zip
+
       - name: Create Release
         uses: ncipollo/release-action@v1.12.0
         with:
-          artifacts: "EspoCRM-nightly-*.zip,build/EspoCRM-upgrade-*.zip"
+          artifacts: "EspoCRM-*.zip"
           tag: nightly-${{ env.today }}
           name: ${{ env.version }}-${{ env.today }}
           commit: main
