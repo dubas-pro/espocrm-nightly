@@ -1,0 +1,68 @@
+---
+# -------------------------------------------------------------------------------------------------
+# Job Name
+# -------------------------------------------------------------------------------------------------
+name: nightly
+
+# -------------------------------------------------------------------------------------------------
+# When to run
+# -------------------------------------------------------------------------------------------------
+on:
+  # Runs manually
+  workflow_dispatch:
+
+  # Runs daily
+  schedule:
+    - cron: '0 0 * * *'
+
+# -------------------------------------------------------------------------------------------------
+# What to run
+# -------------------------------------------------------------------------------------------------
+jobs:
+  nightly:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Get current date
+        run: echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Checkout EspoCRM
+        uses: actions/checkout@v3.3.0
+        with:
+          repository: espocrm/espocrm
+          ref: refs/heads/master
+          fetch-depth: 0
+
+      - name: Get latest version
+        run: echo "version=$(git tag | sort --version-sort | tail -n1)" >> $GITHUB_ENV
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: 16
+
+      - name: NPM Install
+        run: npm ci
+
+      - name: Full Build
+        run: grunt
+
+      - name: Create a ZIP archive
+        run: cd build/EspoCRM-* && zip --quiet --recurse-paths ../../EspoCRM-nightly-${{ env.today }}.zip *
+
+      - name: Create an Upgrade Package
+        run: node diff ${{ env.version }}
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          artifacts: "EspoCRM-nightly-*.zip,build/EspoCRM-upgrade-*.zip"
+          tag: nightly-${{ env.today }}
+          name: ${{ env.version }}-${{ env.today }}
+          commit: main
+          omitBody: true
+          allowUpdates: true
+          removeArtifacts: true
