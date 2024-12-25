@@ -30,7 +30,7 @@ jobs:
         run: echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Checkout EspoCRM
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v4
         with:
           repository: espocrm/espocrm
           ref: refs/heads/master
@@ -40,9 +40,16 @@ jobs:
         run: echo "version=$(git tag | sort --version-sort | tail -n1)" >> $GITHUB_ENV
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3.6.0
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 18
+      
+      - name: Setup PHP with Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: composer:v2
+          ini-values: memory_limit=1024M
 
       - name: NPM Install
         run: npm ci
@@ -60,7 +67,7 @@ jobs:
         run: mv build/EspoCRM-upgrade-*.zip EspoCRM-upgrade.zip
 
       - name: Create Release
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1
         with:
           artifacts: "EspoCRM-*.zip"
           tag: nightly-${{ env.today }}
